@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+
+<html lang="en">
+    <head>
+        <title>Exploring Karel's World</title>
+
+        <style>
+            .box {
+                width: 50px;
+                height: 50px;
+                display: inline-block;
+                border: black solid 1px;
+                margin: 0;
+            }
+            .row {
+                display: flex; 
+                margin: 0;
+                padding: 0;
+            }
+
+            .statistic {
+                display: block;
+                color: white;
+                margin: 3px;
+            }
+
+            #grid {
+                line-height: 0;
+                margin: 10px;
+            }
+
+            body {
+                text-align: center;
+                background: #4b6cb7;  /* fallback for old browsers */
+                background: -webkit-linear-gradient(to right, #182848, #4b6cb7);  /* Chrome 10-25, Safari 5.1-6 */
+                background: linear-gradient(to right, #182848, #4b6cb7); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+            }
+
+        </style>
+
+        <script>
+            let internalGrid = [[]];
+
+            function setBeepers(val) {
+                const beepers = document.getElementById('beepers');
+                beepers.innerText = val;
+            }
+
+            function addBeepers(delta) {
+                const beepers = document.getElementById('beepers');
+                beepers.innerText = parseInt(beepers.innerText) + delta;
+            }
+            const incBeepers = () => addBeepers(1);
+            const decBeepers = () => addBeepers(-1);
+
+            function makeBox(i, j) {
+                const box = document.createElement("div");
+                box.className = "box";
+                box.style.backgroundColor = 'azure';
+
+                box.onmousedown = event => {
+                    internalGrid[i][j] = 1-internalGrid[i][j];
+                    if (box.style.backgroundColor == 'azure') {
+                        box.style.backgroundColor = 'darkgray';
+                        incBeepers();
+                    } else {
+                        box.style.backgroundColor = 'azure';
+                        decBeepers();
+                    }
+                }
+                return box;
+            }
+
+            function makeRowInternal(numOfBoxes) {
+                return Array(numOfBoxes).fill(0);
+            }
+
+            function makeRowGUI(currentRow, numOfBoxes) {
+                const row = document.createElement("div");
+                for (let i = 0; i < numOfBoxes; ++i) {
+                    row.appendChild(makeBox(currentRow, i));
+                }
+                return row;
+            }
+
+            function resetGrid() {
+                const grid = document.getElementById("grid");
+                grid.innerHTML = "";
+                internalGrid = Array();
+                setBeepers(0);
+                document.getElementById('components').innerText = "0,0,0,0";
+
+                const h = parseInt(document.getElementById("avenues").value);
+                const w = parseInt(document.getElementById("roads").value);
+
+                for (let i = 0; i < h; ++i) {
+                    grid.appendChild(makeRowGUI(i, w));
+                    internalGrid.push(makeRowInternal(w));
+                }
+            }
+
+            function getConnectedComponent(i, j, vis) {
+                if (i < 0 || i >= vis.length ||
+                    j < 0 || j >= vis[0].length || vis[i][j] != 0) {
+                    return 0;
+                }
+
+                let size = 1;
+                vis[i][j] = 1;
+
+                size += getConnectedComponent(i+1, j, vis);
+                size += getConnectedComponent(i-1, j, vis);
+                size += getConnectedComponent(i, j+1, vis);
+                size += getConnectedComponent(i, j-1, vis);
+
+                return size;
+            }
+
+            function clone2dArray(arr) {
+                const rows = arr.length;
+                
+                const res = [];
+                for (let i = 0; i < rows; ++i) {
+                    res.push([...arr[i]]);
+                }
+
+                return res;
+            }
+
+            function getConnectedComponentsSizes() {
+                const h = internalGrid.length;
+                const w = internalGrid[0].length; 
+
+                const tmp = clone2dArray(internalGrid);
+
+                const res = [];
+
+                for (let i = 0; i < h; ++i) {
+                    for (let j = 0; j < w; ++j) {
+                        if (tmp[i][j] == 0) {
+                            res.push(getConnectedComponent(i, j, tmp));
+                        }
+                    }
+                }
+
+                return res;
+            }
+
+            function displayConnectedComponentsSizes() {
+                const sizes = getConnectedComponentsSizes();
+                document.getElementById('components').innerText = sizes.toString();
+            }
+
+            window.onload = () => {
+                resetGrid();
+            }
+
+        </script>
+
+    </head>
+
+    <body>
+
+        <div class="statistics">
+            <span class="statistic">
+                The number of used Beepers: <span id="beepers">0</span>
+            </span>
+
+            <span class="statistic">
+                Connected components: <span id="components"></span>
+                <button onclick="displayConnectedComponentsSizes()">Check</button>
+            </span>
+        </div>
+
+        <div class="controls">
+            <input type="number" name="roads" onchange="resetGrid()" id="roads" value="10">
+            <input type="number" name="avenues" onchange="resetGrid()" id="avenues" value="10">
+        </div>
+
+        <div id="grid">
+
+        </div>
+        
+    </body>
+</html>
